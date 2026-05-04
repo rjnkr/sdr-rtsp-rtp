@@ -14,35 +14,34 @@
 
 import { spawn, ChildProcess } from "child_process";
 import { EventEmitter } from "events";
-import { DeviceConfig, RtpOutputConfig } from "./types";
+import { AppConfig } from "./types";
 
 const DEFAULT_THRESHOLD  = 500;
 const DEFAULT_HOLDOFF_MS = 2000;
 
 class RtpClient extends EventEmitter {
-  private config: DeviceConfig;
-  private rtpConfig: RtpOutputConfig;
+  private config: AppConfig;
   private ffmpeg: ChildProcess | null = null;
   private _silenceTimer: ReturnType<typeof setTimeout> | null = null;
   private _intentionalStop = false;
 
-  constructor(config: DeviceConfig, rtpConfig: RtpOutputConfig) {
+  constructor(config: AppConfig) {
     super();
-    this.config    = config;
-    this.rtpConfig = rtpConfig;
+    this.config = config;
   }
 
   start(): void {
-    const { host, port } = this.rtpConfig;
-    const { label } = this.config;
-    const threshold = this.rtpConfig.threshold ?? DEFAULT_THRESHOLD;
-    const holdOffMs = this.rtpConfig.holdOffMs  ?? DEFAULT_HOLDOFF_MS;
+    const rtpOutput = this.config.device.rtpOutput!;
+    const { host, port } = rtpOutput;
+    const { label } = this.config.device;
+    const threshold = rtpOutput.threshold ?? DEFAULT_THRESHOLD;
+    const holdOffMs = rtpOutput.holdOffMs  ?? DEFAULT_HOLDOFF_MS;
     console.log(`[${label}] RTP client ready → rtp://${host}:${port}  (VAD threshold=${threshold} holdOff=${holdOffMs}ms)`);
   }
 
   writePcm(pcmData: Buffer): void {
     const rms = this._rms(pcmData);
-    const threshold = this.rtpConfig.threshold ?? DEFAULT_THRESHOLD;
+    const threshold = this.config.device.rtpOutput?.threshold ?? DEFAULT_THRESHOLD;
 
     if (rms >= threshold) {
       this._onVoice(pcmData);
@@ -80,7 +79,7 @@ class RtpClient extends EventEmitter {
     }
 
     if (!this._silenceTimer) {
-      const holdOffMs = this.rtpConfig.holdOffMs ?? DEFAULT_HOLDOFF_MS;
+      const holdOffMs = this.config.device.rtpOutput?.holdOffMs ?? DEFAULT_HOLDOFF_MS;
       this._silenceTimer = setTimeout(() => {
         this._silenceTimer = null;
         this._disconnect();
@@ -91,10 +90,10 @@ class RtpClient extends EventEmitter {
   // ── FFmpeg lifecycle ───────────────────────────────────────────────────────
 
   private _connect(): void {
-    const { audioSampleRate, label } = this.config;
-    const { host, port, rtcpPort }   = this.rtpConfig;
+    const { audioSampleRate, label, modulation, stereo } = this.config.device;
+    const { host, port, rtcpPort } = this.config.device.rtpOutput!;
     const rtcp = rtcpPort ?? (port + 1);
-    const outputChannels = (this.config.modulation === "wbfm" && this.config.stereo) ? 2 : 1;
+    const outputChannels = (modulation === "wbfm" && stereo) ? 2 : 1;
     const url = `rtp://${host}:${port}?rtcpport=${rtcp}`;
 
     this._intentionalStop = false;
@@ -132,7 +131,7 @@ class RtpClient extends EventEmitter {
   private _disconnect(): void {
     if (!this.ffmpeg) return;
     this._intentionalStop = true;
-    const { label } = this.config;
+    const { label } = this.config.device;
     console.log(`[${label}] RTP client disconnected (silence)`);
     try { this.ffmpeg.stdin!.end();     } catch (_) {}
     try { this.ffmpeg.kill("SIGTERM"); } catch (_) {}

@@ -3,12 +3,19 @@
     "port": 8554,
     "host": "0.0.0.0"
   },
+  "rtp": {
+    "port": 6001,
+    "host": "10.180.35.13",
+    "ttl": 64,
+    "payloadType": 96,
+    "ssrc": 1234567890
+  },
   "device": {
     "id": "sdr1",
     "label": "SDR Device 1",
-    "rtlTcpHost": "192.168.1.100",
+    "rtlTcpHost": "10.10.10.64",
     "rtlTcpPort": 1234,
-    "frequency": 100300000,
+    "frequency": 98400000,
     "sampleRate": 2400000,
     "gain": 40,
     "ppmCorrection": 0,

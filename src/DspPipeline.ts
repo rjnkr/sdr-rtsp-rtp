@@ -9,10 +9,10 @@
 
 import { spawn, ChildProcess } from "child_process";
 import { EventEmitter } from "events";
-import { DeviceConfig } from "./types";
+import { AppConfig } from "./types";
 
 class DspPipeline extends EventEmitter {
-  private config: DeviceConfig;
+  private config: AppConfig;
   private ffmpeg: ChildProcess | null = null;
   private running = false;
 
@@ -31,19 +31,19 @@ class DspPipeline extends EventEmitter {
   private readonly _decimFactor: number;
   private _decimCounter = 0;
 
-  constructor(config: DeviceConfig) {
+  constructor(config: AppConfig) {
     super();
     this.config = config;
-    this._decimFactor = Math.max(1, Math.floor(config.sampleRate / 200000));
+    this._decimFactor = Math.max(1, Math.floor(config.device.sampleRate / 200000));
   }
 
   start(): void {
-    const { sampleRate, audioSampleRate, modulation, label } = this.config;
+    const { sampleRate, audioSampleRate, modulation, label } = this.config.device;
     const intermediateRate = Math.round(sampleRate / this._decimFactor);
     // Must match the channel count RtspServer declares in the SDP and feeds to its
     // AAC encoder. The JS demodulator always produces mono; FFmpeg upmixes to stereo
     // when outputChannels=2 (duplicating the channel).
-    const outputChannels = (modulation === "wbfm" && this.config.stereo) ? 2 : 1;
+    const outputChannels = (modulation === "wbfm" && this.config.device.stereo) ? 2 : 1;
 
     console.log(`[${label}] Starting DSP pipeline`);
     console.log(`[${label}]   Modulation   : ${modulation.toUpperCase()}`);
@@ -98,7 +98,7 @@ class DspPipeline extends EventEmitter {
   write(iqBuffer: Buffer): void {
     if (!this.running) return;
 
-    const { modulation } = this.config;
+    const { modulation } = this.config.device;
     let pcm: Buffer | undefined;
 
     switch (modulation.toLowerCase()) {

@@ -3,6 +3,14 @@ export interface RtspConfig {
   host: string;
 }
 
+export interface RtpConfig {
+  port: number;
+  host: string;
+  ttl: number;
+  payloadType: number;
+  ssrc: number;
+}
+
 export interface RtpOutputConfig {
   host: string;
   port: number;
@@ -35,5 +43,6 @@ export interface DeviceConfig {
 
 export interface AppConfig {
   rtsp: RtspConfig;
+  rtp: RtpConfig;
   device: DeviceConfig;
 }

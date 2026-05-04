@@ -21,7 +21,7 @@ import dgram from "dgram";
 import { spawn, ChildProcess } from "child_process";
 import { EventEmitter } from "events";
 import crypto from "crypto";
-import { DeviceConfig, RtspConfig } from "./types";
+import { AppConfig } from "./types";
 
 // RTP timestamp increment per AAC frame (1024 samples at 44100 Hz ≈ 23ms)
 const AAC_SAMPLES_PER_FRAME = 1024;
@@ -41,8 +41,7 @@ interface ClientState {
 }
 
 class RtspServer extends EventEmitter {
-  private config: DeviceConfig;
-  private rtspConfig: RtspConfig;
+  private config: AppConfig;
   private tcpServer: net.Server | null = null;
   private ffmpeg: ChildProcess | null = null;
   private clients = new Map<net.Socket, ClientState>();
@@ -52,25 +51,24 @@ class RtspServer extends EventEmitter {
   private rtpTimestamp = 0;
   private readonly ssrc: number;
 
-  constructor(config: DeviceConfig, rtspConfig: RtspConfig) {
+  constructor(config: AppConfig) {
     super();
     this.config = config;
-    this.rtspConfig = rtspConfig;
     this.ssrc = crypto.randomBytes(4).readUInt32BE(0);
   }
 
   get publicUrl(): string {
-    const { port } = this.rtspConfig;
-    const { id } = this.config;
+    const { port } = this.config.rtsp;
+    const { id } = this.config.device;
     return `rtsp://<server-ip>:${port}/${id}`;
   }
 
   start(): void {
-    const { audioSampleRate, label, id } = this.config;
-    const { port, host } = this.rtspConfig;
+    const { audioSampleRate, label, id } = this.config.device;
+    const { port, host } = this.config.rtsp;
 
     // ── 1. FFmpeg: encode PCM → raw AAC (ADTS framing so we can split frames) ──
-    const outputChannels = (this.config.modulation === "wbfm" && this.config.stereo) ? 2 : 1;
+    const outputChannels = (this.config.device.modulation === "wbfm" && this.config.device.stereo) ? 2 : 1;
 
     const ffmpegArgs = [
       "-hide_banner", "-loglevel", "error",
@@ -108,7 +106,7 @@ class RtspServer extends EventEmitter {
 
     this.tcpServer.on("error", (err: NodeJS.ErrnoException) => {
       if (err.code === "EADDRINUSE") {
-        console.error(`[${label}] Port ${port} already in use. Change rtsp.port in config.ts`);
+        console.error(`[${label}] Port ${port} already in use. Change rtsp.port in config.json`);
       } else {
         console.error(`[${label}] TCP server error: ${err.message}`);
       }
@@ -140,7 +138,7 @@ class RtspServer extends EventEmitter {
   // ── New TCP connection ───────────────────────────────────────────────────
   private _onClientSocket(socket: net.Socket): void {
     const addr = `${socket.remoteAddress}:${socket.remotePort}`;
-    const { label } = this.config;
+    const { label } = this.config.device;
 
     const client: ClientState = {
       addr,
@@ -182,9 +180,8 @@ class RtspServer extends EventEmitter {
 
   // ── Parse and respond to RTSP messages ─────────────────────────────────
   private _processRtspMessages(socket: net.Socket, client: ClientState): void {
-    const { id, audioSampleRate, label } = this.config;
-    const { port } = this.rtspConfig;
-    const outputChannels = (this.config.modulation === "wbfm" && this.config.stereo) ? 2 : 1;
+    const { audioSampleRate, label } = this.config.device;
+    const outputChannels = (this.config.device.modulation === "wbfm" && this.config.device.stereo) ? 2 : 1;
 
     // RTSP messages end with \r\n\r\n
     while (true) {
@@ -215,8 +212,8 @@ class RtspServer extends EventEmitter {
           const sdp = [
             "v=0",
             `o=- 0 0 IN IP4 127.0.0.1`,
-            `s=SDR Stream: ${this.config.label}`,
-            `i=${this.config.label} — ${(this.config.frequency / 1e6).toFixed(3)} MHz ${this.config.modulation.toUpperCase()}`,
+            `s=SDR Stream: ${this.config.device.label}`,
+            `i=${this.config.device.label} — ${(this.config.device.frequency / 1e6).toFixed(3)} MHz ${this.config.device.modulation.toUpperCase()}`,
             "t=0 0",
             "a=tool:sdr-rtsp-server",
             "a=type:broadcast",

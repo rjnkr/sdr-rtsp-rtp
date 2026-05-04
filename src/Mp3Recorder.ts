@@ -9,22 +9,20 @@ import fs from "fs";
 import path from "path";
 import { spawn, ChildProcess } from "child_process";
 import { EventEmitter } from "events";
-import { DeviceConfig, RecordingConfig } from "./types";
+import { AppConfig } from "./types";
 
 class Mp3Recorder extends EventEmitter {
-  private config: DeviceConfig;
-  private recordingConfig: RecordingConfig;
+  private config: AppConfig;
   private ffmpeg: ChildProcess | null = null;
   private _splitTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(config: DeviceConfig, recordingConfig: RecordingConfig) {
+  constructor(config: AppConfig) {
     super();
     this.config = config;
-    this.recordingConfig = recordingConfig;
   }
 
   start(): void {
-    fs.mkdirSync(this.recordingConfig.outputDir, { recursive: true });
+    fs.mkdirSync(this.config.device.recording!.outputDir, { recursive: true });
     this._openNewFile();
   }
 
@@ -44,8 +42,8 @@ class Mp3Recorder extends EventEmitter {
   private _openNewFile(): void {
     this._closeCurrentFile();
 
-    const { audioSampleRate, label } = this.config;
-    const outputChannels = (this.config.modulation === "wbfm" && this.config.stereo) ? 2 : 1;
+    const { audioSampleRate, label, modulation, stereo } = this.config.device;
+    const outputChannels = (modulation === "wbfm" && stereo) ? 2 : 1;
     const filename = this._filename();
 
     this.ffmpeg = spawn("ffmpeg", [
@@ -94,7 +92,7 @@ class Mp3Recorder extends EventEmitter {
 
   private _msUntilNextBoundary(): number {
     const now     = Date.now();
-    const splitMs = this.recordingConfig.splitMinutes * 60 * 1000;
+    const splitMs = this.config.device.recording!.splitMinutes * 60 * 1000;
     // Next multiple of splitMs since Unix epoch (which is midnight UTC)
     const next    = Math.ceil((now + 500) / splitMs) * splitMs;
     return next - now;
@@ -107,7 +105,7 @@ class Mp3Recorder extends EventEmitter {
     const ts = new Date().toISOString()
       .replace(/:/g, "-")
       .replace(/\..+$/, "");
-    return path.join(this.recordingConfig.outputDir, `${this.config.id}_${ts}.mp3`);
+    return path.join(this.config.device.recording!.outputDir, `${this.config.device.id}_${ts}.mp3`);
   }
 }
 

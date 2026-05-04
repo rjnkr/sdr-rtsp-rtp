@@ -16,9 +16,10 @@ function banner(): void {
   console.log("╔══════════════════════════════════════════════════════════════════╗");
   console.log("║          SDR → RTSP Streaming Server & RTP client                ║");
   console.log("╚══════════════════════════════════════════════════════════════════╝");
-  console.log(`  Config    : ${configFile}` + process.env.CONFIG_FILE ? "" : "use CONFIG_FILE env variable to specify a different config file");
+  console.log(`  Config    : ${configFile}` + (process.env.CONFIG_FILE ? "" : "  (use CONFIG_FILE env variable to specify a different config file)"));
   console.log(`  Device    : ${config.device.label}`);
   console.log(`  RTSP port : ${config.rtsp.port}`);
+  console.log(`  RTP port  : ${config.rtp.host}:${config.rtp.port}`);
   console.log("");
 }
 
@@ -39,7 +40,7 @@ function start(): void {
   banner();
   checkDependencies();
 
-  manager = new StreamManager(config.device, config.rtsp);
+  manager = new StreamManager(config);
   manager.start();
 
   setTimeout(() => {

@@ -3,7 +3,7 @@
 
 import net from "net";
 import { EventEmitter } from "events";
-import { DeviceConfig } from "./types";
+import { AppConfig } from "./types";
 
 // rtl_tcp command codes
 const CMD = {
@@ -16,7 +16,7 @@ const CMD = {
 } as const;
 
 class SdrClient extends EventEmitter {
-  private config: DeviceConfig;
+  private config: AppConfig;
   private socket: net.Socket | null = null;
   private connected = false;
   private everConnected = false;   // true once the first successful connection is made
@@ -24,7 +24,7 @@ class SdrClient extends EventEmitter {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private destroyed = false;
 
-  constructor(config: DeviceConfig) {
+  constructor(config: AppConfig) {
     super();
     this.config = config;
   }
@@ -32,7 +32,7 @@ class SdrClient extends EventEmitter {
   connect(): void {
     if (this.destroyed) return;
 
-    const { rtlTcpHost, rtlTcpPort, label } = this.config;
+    const { rtlTcpHost, rtlTcpPort, label } = this.config.device;
     console.log(`[${label}] Connecting to rtl_tcp at ${rtlTcpHost}:${rtlTcpPort}...`);
 
     this.socket = new net.Socket();
@@ -93,7 +93,7 @@ class SdrClient extends EventEmitter {
 
   private _scheduleReconnect(): void {
     if (this.destroyed) return;
-    const { label, rtlTcpHost, rtlTcpPort } = this.config;
+    const { label, rtlTcpHost, rtlTcpPort } = this.config.device;
     console.log(`[${label}] rtl_tcp not reachable (${rtlTcpHost}:${rtlTcpPort}) — retrying in ${this.reconnectDelay / 1000}s...`);
     this.reconnectTimer = setTimeout(() => this.connect(), this.reconnectDelay);
   }
@@ -107,7 +107,7 @@ class SdrClient extends EventEmitter {
   }
 
   private _applySettings(): void {
-    const { frequency, sampleRate, gain, ppmCorrection, label } = this.config;
+    const { frequency, sampleRate, gain, ppmCorrection, label } = this.config.device;
 
     console.log(`[${label}] Setting frequency: ${(frequency / 1e6).toFixed(3)} MHz`);
     this._sendCommand(CMD.SET_FREQUENCY, frequency);
@@ -134,13 +134,13 @@ class SdrClient extends EventEmitter {
 
   // Retune on-the-fly without reconnecting
   setFrequency(hz: number): void {
-    this.config.frequency = hz;
-    console.log(`[${this.config.label}] Retuning to ${(hz / 1e6).toFixed(3)} MHz`);
+    this.config.device.frequency = hz;
+    console.log(`[${this.config.device.label}] Retuning to ${(hz / 1e6).toFixed(3)} MHz`);
     this._sendCommand(CMD.SET_FREQUENCY, hz);
   }
 
   setGain(db: number): void {
-    this.config.gain = db;
+    this.config.device.gain = db;
     if (db === 0) {
       this._sendCommand(CMD.SET_GAIN_MODE, 0);
       this._sendCommand(CMD.SET_AGC_MODE, 1);
