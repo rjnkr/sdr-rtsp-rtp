@@ -1,0 +1,24 @@
+{
+  "rtsp": {
+    "port": 8554,
+    "host": "0.0.0.0"
+  },
+  "device": {
+    "id": "sdr1",
+    "label": "SDR Device 1",
+    "rtlTcpHost": "192.168.1.100",
+    "rtlTcpPort": 1234,
+    "frequency": 100300000,
+    "sampleRate": 2400000,
+    "gain": 40,
+    "ppmCorrection": 0,
+    "modulation": "wbfm",
+    "audioSampleRate": 44100,
+    "stereo": false,
+    "recording": {
+      "enabled": false,
+      "outputDir": "./recordings",
+      "splitMinutes": 60
+    }
+  }
+}

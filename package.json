@@ -1,0 +1,20 @@
+{
+  "name": "sdr-rtsp-server",
+  "version": "1.0.0",
+  "description": "SDR to RTSP streaming server - connects to rtl_tcp and serves audio via RTSP",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "node-rtsp-stream": "^0.0.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
