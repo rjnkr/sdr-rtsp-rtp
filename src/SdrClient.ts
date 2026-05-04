@@ -32,14 +32,14 @@ class SdrClient extends EventEmitter {
   connect(): void {
     if (this.destroyed) return;
 
-    const { rtlTcpHost, rtlTcpPort, label } = this.config.device;
-    console.log(`[${label}] Connecting to rtl_tcp at ${rtlTcpHost}:${rtlTcpPort}...`);
+    const { rtlTcpHost, rtlTcpPort } = this.config.device;
+    console.log(`Connecting to rtl_tcp at ${rtlTcpHost}:${rtlTcpPort}...`);
 
     this.socket = new net.Socket();
     this.socket.setNoDelay(true);
 
     this.socket.connect(rtlTcpPort, rtlTcpHost, () => {
-      console.log(`[${label}] Connected to rtl_tcp`);
+      console.log(`Connected to rtl_tcp`);
       this.connected = true;
       this.everConnected = true;
       this._applySettings();
@@ -56,14 +56,14 @@ class SdrClient extends EventEmitter {
         if (headerBuffer.length >= 12) {
           const magic = headerBuffer.slice(0, 4).toString("ascii");
           if (magic === "RTL0") {
-            console.log(`[${label}] rtl_tcp handshake OK`);
+            console.log(`rtl_tcp handshake OK`);
             headerReceived = true;
             // Emit any IQ data that came with the header packet
             if (headerBuffer.length > 12) {
               this.emit("data", headerBuffer.slice(12));
             }
           } else {
-            console.error(`[${label}] Unexpected magic: ${magic}`);
+            console.error(`Unexpected magic: ${magic}`);
             this.socket!.destroy();
           }
         }
@@ -73,7 +73,7 @@ class SdrClient extends EventEmitter {
     });
 
     this.socket.on("error", (err: Error) => {
-      console.error(`[${label}] Socket error: ${err.message}`);
+      console.error(`Socket error: ${err.message}`);
       this.connected = false;
       this.emit("error", err);
     });
@@ -82,7 +82,7 @@ class SdrClient extends EventEmitter {
       this.connected = false;
       if (this.everConnected) {
         // A live connection was lost — let the caller decide (StreamManager will exit)
-        console.warn(`[${label}] Connection lost`);
+        console.warn(`Connection lost`);
         this.emit("disconnected");
       } else {
         // Never connected yet — keep retrying silently until it succeeds
@@ -93,8 +93,8 @@ class SdrClient extends EventEmitter {
 
   private _scheduleReconnect(): void {
     if (this.destroyed) return;
-    const { label, rtlTcpHost, rtlTcpPort } = this.config.device;
-    console.log(`[${label}] rtl_tcp not reachable (${rtlTcpHost}:${rtlTcpPort}) — retrying in ${this.reconnectDelay / 1000}s...`);
+    const { rtlTcpHost, rtlTcpPort } = this.config.device;
+    console.log(`rtl_tcp not reachable (${rtlTcpHost}:${rtlTcpPort}) — retrying in ${this.reconnectDelay / 1000}s...`);
     this.reconnectTimer = setTimeout(() => this.connect(), this.reconnectDelay);
   }
 
@@ -107,27 +107,27 @@ class SdrClient extends EventEmitter {
   }
 
   private _applySettings(): void {
-    const { frequency, sampleRate, gain, ppmCorrection, label } = this.config.device;
+    const { frequency, sampleRate, gain, ppmCorrection } = this.config.device;
 
-    console.log(`[${label}] Setting frequency: ${(frequency / 1e6).toFixed(3)} MHz`);
+    console.log(`Setting frequency: ${(frequency / 1e6).toFixed(3)} MHz`);
     this._sendCommand(CMD.SET_FREQUENCY, frequency);
 
-    console.log(`[${label}] Setting sample rate: ${(sampleRate / 1e6).toFixed(2)} MSPS`);
+    console.log(`Setting sample rate: ${(sampleRate / 1e6).toFixed(2)} MSPS`);
     this._sendCommand(CMD.SET_SAMPLE_RATE, sampleRate);
 
     if (gain === 0) {
-      console.log(`[${label}] Gain: auto`);
+      console.log(`Gain: auto`);
       this._sendCommand(CMD.SET_GAIN_MODE, 0); // auto
       this._sendCommand(CMD.SET_AGC_MODE, 1);
     } else {
-      console.log(`[${label}] Gain: ${gain} dB`);
+      console.log(`Gain: ${gain} dB`);
       this._sendCommand(CMD.SET_GAIN_MODE, 1);       // manual
       this._sendCommand(CMD.SET_GAIN, gain * 10);    // tenths of dB
       this._sendCommand(CMD.SET_AGC_MODE, 0);
     }
 
     if (ppmCorrection !== 0) {
-      console.log(`[${label}] PPM correction: ${ppmCorrection}`);
+      console.log(`PPM correction: ${ppmCorrection}`);
       this._sendCommand(CMD.SET_PPM, ppmCorrection);
     }
   }
@@ -135,7 +135,7 @@ class SdrClient extends EventEmitter {
   // Retune on-the-fly without reconnecting
   setFrequency(hz: number): void {
     this.config.device.frequency = hz;
-    console.log(`[${this.config.device.label}] Retuning to ${(hz / 1e6).toFixed(3)} MHz`);
+    console.log(`Retuning to ${(hz / 1e6).toFixed(3)} MHz`);
     this._sendCommand(CMD.SET_FREQUENCY, hz);
   }
 

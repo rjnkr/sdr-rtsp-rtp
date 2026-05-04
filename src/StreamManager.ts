@@ -21,15 +21,15 @@ class StreamManager {
   }
 
   start(): void {
-    const { label, id } = this.config.device;
-    console.log(`\n[${label}] ─── Starting stream pipeline ───`);
+    const { id } = this.config.device;
+    console.log(`\n─── Starting stream pipeline ───`);
 
     // 1. RTSP publisher (starts listening before data arrives)
     this.rtspServer = new RtspServer(this.config);
     this.rtspServer.start();
 
     this.rtspServer.on("close", () => {
-      console.warn(`[${label}] RTSP server closed — restarting in 2s`);
+      console.warn(`RTSP server closed — restarting in 2s`);
       setTimeout(() => this._restartRtsp(), 2000);
     });
 
@@ -38,11 +38,11 @@ class StreamManager {
       this.rtpClient = new RtpClient(this.config);
       this.rtpClient.start();
       this.rtpClient.on("close", () => {
-        console.warn(`[${label}] RTP client closed — restarting in 2s`);
+        console.warn(`RTP client closed — restarting in 2s`);
         setTimeout(() => this._restartRtp(), 2000);
       });
       this.rtpClient.on("error", (err: Error) => {
-        console.error(`[${label}] RTP client error: ${err.message}`);
+        console.error(`RTP client error: ${err.message}`);
       });
     }
 
@@ -52,7 +52,7 @@ class StreamManager {
       this.mp3Recorder = new Mp3Recorder(this.config);
       this.mp3Recorder.start();
       this.mp3Recorder.on("error", (err: Error) => {
-        console.error(`[${label}] Recorder error: ${err.message}`);
+        console.error(`Recorder error: ${err.message}`);
       });
     }
 
@@ -68,7 +68,7 @@ class StreamManager {
     });
 
     this.dspPipeline.on("close", () => {
-      console.warn(`[${label}] DSP pipeline closed — restarting in 2s`);
+      console.warn(`DSP pipeline closed — restarting in 2s`);
       setTimeout(() => this._restartDsp(), 2000);
     });
 
@@ -83,13 +83,13 @@ class StreamManager {
     this.sdrClient.on("connected", () => {
       const { frequency, modulation } = this.config.device;
       const { port } = this.config.rtsp;
-      console.log(`[${label}] ✓ Stream active`);
-      console.log(`[${label}]   Frequency : ${(frequency / 1e6).toFixed(3)} MHz (${modulation.toUpperCase()})`);
-      console.log(`[${label}]   RTSP URL  : rtsp://<server-ip>:${port}/${id}`);
+      console.log(`✓ Stream active`);
+      console.log(`  Frequency : ${(frequency / 1e6).toFixed(3)} MHz (${modulation.toUpperCase()})`);
+      console.log(`  RTSP URL  : rtsp://<server-ip>:${port}/${id}`);
     });
 
     this.sdrClient.on("disconnected", () => {
-      console.error(`[${label}] SDR connection lost — shutting down`);
+      console.error(`SDR connection lost — shutting down`);
       this.stop();
       process.exit(1);
     });
@@ -133,7 +133,7 @@ class StreamManager {
     this.rtpClient.start();
     this.rtpClient.on("close", () => { setTimeout(() => this._restartRtp(), 2000); });
     this.rtpClient.on("error", (err: Error) => {
-      console.error(`[${this.config.device.label}] RTP client error: ${err.message}`);
+      console.error(`RTP client error: ${err.message}`);
     });
   }
 }

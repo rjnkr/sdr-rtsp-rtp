@@ -42,7 +42,7 @@ class Mp3Recorder extends EventEmitter {
   private _openNewFile(): void {
     this._closeCurrentFile();
 
-    const { audioSampleRate, label, modulation, stereo } = this.config.device;
+    const { audioSampleRate, modulation, stereo } = this.config.device;
     const outputChannels = (modulation === "wbfm" && stereo) ? 2 : 1;
     const filename = this._filename();
 
@@ -56,21 +56,21 @@ class Mp3Recorder extends EventEmitter {
 
     this.ffmpeg.stderr!.on("data", (d: Buffer) => {
       const msg = d.toString().trim();
-      if (msg) console.error(`[${label}] Recorder: ${msg}`);
+      if (msg) console.error(`Recorder: ${msg}`);
     });
 
     this.ffmpeg.on("error", (err: Error) => {
-      console.error(`[${label}] Recorder FFmpeg error: ${err.message}`);
+      console.error(`Recorder FFmpeg error: ${err.message}`);
       this.emit("error", err);
     });
 
     this.ffmpeg.on("close", (code: number | null) => {
       if (code !== 0 && code !== null) {
-        console.warn(`[${label}] Recorder exited unexpectedly (code ${code})`);
+        console.warn(`Recorder exited unexpectedly (code ${code})`);
       }
     });
 
-    console.log(`[${label}] Recording → ${filename}`);
+    console.log(`Recording → ${filename}`);
     this._scheduleNextSplit();
   }
 

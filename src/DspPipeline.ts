@@ -38,18 +38,18 @@ class DspPipeline extends EventEmitter {
   }
 
   start(): void {
-    const { sampleRate, audioSampleRate, modulation, label } = this.config.device;
+    const { sampleRate, audioSampleRate, modulation } = this.config.device;
     const intermediateRate = Math.round(sampleRate / this._decimFactor);
     // Must match the channel count RtspServer declares in the SDP and feeds to its
     // AAC encoder. The JS demodulator always produces mono; FFmpeg upmixes to stereo
     // when outputChannels=2 (duplicating the channel).
     const outputChannels = (modulation === "wbfm" && this.config.device.stereo) ? 2 : 1;
 
-    console.log(`[${label}] Starting DSP pipeline`);
-    console.log(`[${label}]   Modulation   : ${modulation.toUpperCase()}`);
-    console.log(`[${label}]   IQ rate      : ${(sampleRate / 1e6).toFixed(2)} MSPS`);
-    console.log(`[${label}]   Decim factor : ${this._decimFactor}x → ${(intermediateRate / 1000).toFixed(0)} kHz intermediate`);
-    console.log(`[${label}]   Output rate  : ${audioSampleRate} Hz  channels: ${outputChannels}`);
+    console.log(`Starting DSP pipeline`);
+    console.log(`  Modulation   : ${modulation.toUpperCase()}`);
+    console.log(`  IQ rate      : ${(sampleRate / 1e6).toFixed(2)} MSPS`);
+    console.log(`  Decim factor : ${this._decimFactor}x → ${(intermediateRate / 1000).toFixed(0)} kHz intermediate`);
+    console.log(`  Output rate  : ${audioSampleRate} Hz  channels: ${outputChannels}`);
 
     // FFmpeg used only for resampling — no demodulation filters needed
     const args = [
@@ -74,17 +74,17 @@ class DspPipeline extends EventEmitter {
 
     this.ffmpeg.stderr!.on("data", (data: Buffer) => {
       const msg = data.toString().trim();
-      if (msg) console.error(`[${label}] FFmpeg: ${msg}`);
+      if (msg) console.error(`FFmpeg: ${msg}`);
     });
 
     this.ffmpeg.on("close", (code: number | null) => {
       this.running = false;
-      console.warn(`[${label}] FFmpeg exited (code ${code})`);
+      console.warn(`FFmpeg exited (code ${code})`);
       this.emit("close", code);
     });
 
     this.ffmpeg.on("error", (err: NodeJS.ErrnoException) => {
-      console.error(`[${label}] FFmpeg spawn error: ${err.message}`);
+      console.error(`FFmpeg spawn error: ${err.message}`);
       if (err.code === "ENOENT") {
         console.error("  → FFmpeg not found.");
         console.error("    Windows : download from https://ffmpeg.org and add bin\\ to PATH");

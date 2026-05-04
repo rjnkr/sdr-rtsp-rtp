@@ -33,10 +33,9 @@ class RtpClient extends EventEmitter {
   start(): void {
     const rtpOutput = this.config.device.rtpOutput!;
     const { host, port } = rtpOutput;
-    const { label } = this.config.device;
     const threshold = rtpOutput.threshold ?? DEFAULT_THRESHOLD;
     const holdOffMs = rtpOutput.holdOffMs  ?? DEFAULT_HOLDOFF_MS;
-    console.log(`[${label}] RTP client ready → rtp://${host}:${port}  (VAD threshold=${threshold} holdOff=${holdOffMs}ms)`);
+    console.log(`RTP client ready → rtp://${host}:${port}  (VAD threshold=${threshold} holdOff=${holdOffMs}ms)`);
   }
 
   writePcm(pcmData: Buffer): void {
@@ -90,7 +89,7 @@ class RtpClient extends EventEmitter {
   // ── FFmpeg lifecycle ───────────────────────────────────────────────────────
 
   private _connect(): void {
-    const { audioSampleRate, label, modulation, stereo } = this.config.device;
+    const { audioSampleRate, modulation, stereo } = this.config.device;
     const { host, port, rtcpPort } = this.config.device.rtpOutput!;
     const rtcp = rtcpPort ?? (port + 1);
     const outputChannels = (modulation === "wbfm" && stereo) ? 2 : 1;
@@ -108,11 +107,11 @@ class RtpClient extends EventEmitter {
 
     this.ffmpeg.stderr!.on("data", (d: Buffer) => {
       const msg = d.toString().trim();
-      if (msg) console.error(`[${label}] RTP client: ${msg}`);
+      if (msg) console.error(`RTP client: ${msg}`);
     });
 
     this.ffmpeg.on("error", (err: Error) => {
-      console.error(`[${label}] RTP client FFmpeg error: ${err.message}`);
+      console.error(`RTP client FFmpeg error: ${err.message}`);
       this.ffmpeg = null;
       this.emit("error", err);
     });
@@ -120,19 +119,18 @@ class RtpClient extends EventEmitter {
     this.ffmpeg.on("close", (code: number | null) => {
       this.ffmpeg = null;
       if (!this._intentionalStop) {
-        console.warn(`[${label}] RTP client exited unexpectedly (code ${code})`);
+        console.warn(`RTP client exited unexpectedly (code ${code})`);
         this.emit("close", code);
       }
     });
 
-    console.log(`[${label}] RTP client connected → ${url}`);
+    console.log(`RTP client connected → ${url}`);
   }
 
   private _disconnect(): void {
     if (!this.ffmpeg) return;
     this._intentionalStop = true;
-    const { label } = this.config.device;
-    console.log(`[${label}] RTP client disconnected (silence)`);
+    console.log(`RTP client disconnected (silence)`);
     try { this.ffmpeg.stdin!.end();     } catch (_) {}
     try { this.ffmpeg.kill("SIGTERM"); } catch (_) {}
     this.ffmpeg = null;

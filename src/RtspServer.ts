@@ -64,7 +64,7 @@ class RtspServer extends EventEmitter {
   }
 
   start(): void {
-    const { audioSampleRate, label, id } = this.config.device;
+    const { audioSampleRate, id } = this.config.device;
     const { port, host } = this.config.rtsp;
 
     // ── 1. FFmpeg: encode PCM → raw AAC (ADTS framing so we can split frames) ──
@@ -84,14 +84,14 @@ class RtspServer extends EventEmitter {
     this.ffmpeg.stdout!.on("data", (chunk: Buffer) => this._onAacData(chunk));
     this.ffmpeg.stderr!.on("data", (d: Buffer) => {
       const msg = d.toString().trim();
-      if (msg) console.error(`[${label}] Encoder: ${msg}`);
+      if (msg) console.error(`Encoder: ${msg}`);
     });
     this.ffmpeg.on("error", (err: NodeJS.ErrnoException) => {
-      console.error(`[${label}] FFmpeg error: ${err.message}`);
+      console.error(`FFmpeg error: ${err.message}`);
       if (err.code === "ENOENT") console.error("  → FFmpeg not found. Install ffmpeg and add it to PATH.");
     });
     this.ffmpeg.on("close", (code: number | null) => {
-      console.warn(`[${label}] FFmpeg encoder exited (code ${code})`);
+      console.warn(`FFmpeg encoder exited (code ${code})`);
       this.emit("close", code);
     });
 
@@ -100,15 +100,15 @@ class RtspServer extends EventEmitter {
 
     this.tcpServer.listen(port, host, () => {
       this.running = true;
-      console.log(`[${label}] RTSP server listening → rtsp://0.0.0.0:${port}/${id}`);
-      console.log(`[${label}]   Connect with VLC: rtsp://<server-ip>:${port}/${id}`);
+      console.log(`RTSP server listening → rtsp://0.0.0.0:${port}/${id}`);
+      console.log(`  Connect with VLC: rtsp://<server-ip>:${port}/${id}`);
     });
 
     this.tcpServer.on("error", (err: NodeJS.ErrnoException) => {
       if (err.code === "EADDRINUSE") {
-        console.error(`[${label}] Port ${port} already in use. Change rtsp.port in config.json`);
+        console.error(`Port ${port} already in use. Change rtsp.port in config.json`);
       } else {
-        console.error(`[${label}] TCP server error: ${err.message}`);
+        console.error(`TCP server error: ${err.message}`);
       }
       this.emit("error", err);
     });
@@ -138,7 +138,6 @@ class RtspServer extends EventEmitter {
   // ── New TCP connection ───────────────────────────────────────────────────
   private _onClientSocket(socket: net.Socket): void {
     const addr = `${socket.remoteAddress}:${socket.remotePort}`;
-    const { label } = this.config.device;
 
     const client: ClientState = {
       addr,
@@ -165,7 +164,7 @@ class RtspServer extends EventEmitter {
       this.clients.delete(socket);
       if (wasPlaying) {
         const remaining = this._playingCount();
-        console.log(`[${label}] ✗ Client disconnected: ${addr}  (${remaining} listener${remaining !== 1 ? "s" : ""} remaining)`);
+        console.log(`✗ Client disconnected: ${addr}  (${remaining} listener${remaining !== 1 ? "s" : ""} remaining)`);
         this.emit("clientDisconnected", { addr, remaining });
       }
     });
@@ -173,14 +172,14 @@ class RtspServer extends EventEmitter {
     socket.on("error", (err: NodeJS.ErrnoException) => {
       // ECONNRESET is normal (client closed without TEARDOWN)
       if (err.code !== "ECONNRESET") {
-        console.error(`[${label}] Client socket error (${addr}): ${err.message}`);
+        console.error(`Client socket error (${addr}): ${err.message}`);
       }
     });
   }
 
   // ── Parse and respond to RTSP messages ─────────────────────────────────
   private _processRtspMessages(socket: net.Socket, client: ClientState): void {
-    const { audioSampleRate, label } = this.config.device;
+    const { audioSampleRate } = this.config.device;
     const outputChannels = (this.config.device.modulation === "wbfm" && this.config.device.stereo) ? 2 : 1;
 
     // RTSP messages end with \r\n\r\n
@@ -260,7 +259,7 @@ class RtspServer extends EventEmitter {
             client.udpAddress = socket.remoteAddress?.replace(/^::ffff:/, "") ?? null;
             client.udpRtpPort = clientRtpPort;
             const udpSock = dgram.createSocket("udp4");
-            udpSock.on("error", (err: Error) => console.error(`[${label}] UDP error: ${err.message}`));
+            udpSock.on("error", (err: Error) => console.error(`UDP error: ${err.message}`));
             udpSock.bind(0, () => {
               client.udpSocket = udpSock;
               const serverPort = udpSock.address().port;
@@ -286,7 +285,7 @@ class RtspServer extends EventEmitter {
             "", "",
           ]);
           const count = this._playingCount();
-          console.log(`[${label}] ✓ Client connected [RTSP]: ${client.addr}  (${count} listener${count !== 1 ? "s" : ""} total)`);
+          console.log(`✓ Client connected [RTSP]: ${client.addr}  (${count} listener${count !== 1 ? "s" : ""} total)`);
           this.emit("clientConnected", { addr: client.addr, count });
           break;
         }
