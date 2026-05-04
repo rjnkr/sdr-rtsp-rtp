@@ -13,10 +13,10 @@ const config: AppConfig = JSON.parse(fs.readFileSync(path.resolve(process.cwd(),
 let manager: StreamManager;
 
 function banner(): void {
-  console.log("╔══════════════════════════════════════════════════════╗");
-  console.log("║          SDR → RTSP Streaming Server                 ║");
-  console.log("╚══════════════════════════════════════════════════════╝");
-  console.log(`  Config    : ${configFile}`);
+  console.log("╔══════════════════════════════════════════════════════════════════╗");
+  console.log("║          SDR → RTSP Streaming Server & RTP client                ║");
+  console.log("╚══════════════════════════════════════════════════════════════════╝");
+  console.log(`  Config    : ${configFile}` + process.env.CONFIG_FILE ? "" : "use CONFIG_FILE env variable to specify a different config file");
   console.log(`  Device    : ${config.device.label}`);
   console.log(`  RTSP port : ${config.rtsp.port}`);
   console.log("");

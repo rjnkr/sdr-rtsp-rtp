@@ -1,0 +1,14 @@
+services:
+  sdr-rtsp-rtp:
+    image: 301167/sdr-rtsp-rtp:latest
+    restart: unless-stopped
+    ports:
+      - "8554:8554"
+    volumes:
+      - ./config.json:/app/config.json:ro
+      - recordings:/app/recordings
+    environment:
+      CONFIG_FILE: config.json
+
+volumes:
+  recordings:
